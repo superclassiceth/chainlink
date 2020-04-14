@@ -85,7 +85,7 @@ func (b *logBroadcaster) Start() {
 
 	// If the latest block is newer than the one in the cursor (or if we have
 	// no cursor), start from that block height.
-	if currentHeight > cursor.BlockIndex {
+	if currentHeight > uint64(cursor.BlockIndex) {
 		b.updateLogCursor(currentHeight, 0)
 	}
 
@@ -192,8 +192,8 @@ func (b *logBroadcaster) notifyDisconnect() {
 func (b *logBroadcaster) updateLogCursor(blockIdx, logIdx uint64) {
 	b.cursor.Initialized = true
 	b.cursor.Name = logBroadcasterCursorName
-	b.cursor.BlockIndex = blockIdx
-	b.cursor.LogIndex = logIdx
+	b.cursor.BlockIndex = int64(blockIdx)
+	b.cursor.LogIndex = int64(logIdx)
 
 	err := b.orm.SaveLogCursor(&b.cursor)
 	if err != nil {
@@ -238,8 +238,8 @@ func (b *logBroadcaster) process(subscription eth.Subscription, chRawLogs <-chan
 func (b *logBroadcaster) onRawLog(rawLog eth.Log) {
 	// Skip logs that we've already seen
 	if b.cursor.Initialized &&
-		(rawLog.BlockNumber < b.cursor.BlockIndex ||
-			(rawLog.BlockNumber == b.cursor.BlockIndex && uint64(rawLog.Index) <= b.cursor.LogIndex)) {
+		(rawLog.BlockNumber < uint64(b.cursor.BlockIndex) ||
+			(rawLog.BlockNumber == uint64(b.cursor.BlockIndex) && rawLog.Index <= uint(b.cursor.LogIndex))) {
 		return
 	}
 
